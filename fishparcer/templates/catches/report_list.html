@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Отчёты — fishparcer{% endblock title %}
+
+{% block content %}
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h1 class="mb-1">Отчёты</h1>
+      <p class="text-muted mb-0">
+        Всего: {{ stats.total }} · Новые: {{ stats.new }} · Подтверждённые: {{ stats.confirmed }}
+      </p>
+    </div>
+    <a href="{% url 'catches:sync' %}" class="btn btn-primary">+ Загрузить из API</a>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="get">
+        <div class="row g-3 align-items-end mb-3">
+          <div class="col-md-2">
+            <label class="form-label">{{ filter_form.q.label }}</label>
+            {{ filter_form.q }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ filter_form.fish.label }}</label>
+            {% if filter_form.fields.fish.choices %}
+              <div class="fp-search-select fp-search-select-multi" data-plural="рыб">
+                <button type="button" class="form-select fp-search-select-toggle text-start">
+                  <span class="fp-search-select-label text-truncate">Все</span>
+                </button>
+                <div class="fp-search-select-menu">
+                  <input
+                    type="search"
+                    class="form-control form-control-sm fp-search-select-search"
+                    placeholder="Поиск..."
+                    autocomplete="off"
+                  />
+                  <div class="px-2 pb-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary fp-select-all">
+                      Выбрать все
+                    </button>
+                  </div>
+                  <div class="fp-search-select-options">
+                    {% for value, label in filter_form.fields.fish.choices %}
+                      <label class="fp-search-select-checkbox-item">
+                        <input
+                          type="checkbox"
+                          name="fish"
+                          value="{{ value }}"
+                          class="form-check-input fp-filter-checkbox"
+                          {% if filter_form.fish.value and value in filter_form.fish.value %}checked{% endif %}
+                        />
+                        <span>{{ label }}</span>
+                      </label>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <div class="form-select text-muted">Нет рыб</div>
+            {% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ filter_form.region.label }}</label>
+            {% if filter_form.fields.region.choices %}
+              <div class="fp-search-select fp-search-select-multi" data-plural="регионов">
+                <button type="button" class="form-select fp-search-select-toggle text-start">
+                  <span class="fp-search-select-label text-truncate">Все</span>
+                </button>
+                <div class="fp-search-select-menu">
+                  <input
+                    type="search"
+                    class="form-control form-control-sm fp-search-select-search"
+                    placeholder="Поиск..."
+                    autocomplete="off"
+                  />
+                  <div class="px-2 pb-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary fp-select-all">
+                      Выбрать все
+                    </button>
+                  </div>
+                  <div class="fp-search-select-options">
+                    {% for value, label in filter_form.fields.region.choices %}
+                      <label class="fp-search-select-checkbox-item">
+                        <input
+                          type="checkbox"
+                          name="region"
+                          value="{{ value }}"
+                          class="form-check-input fp-filter-checkbox"
+                          {% if filter_form.region.value and value in filter_form.region.value %}checked{% endif %}
+                        />
+                        <span>{{ label }}</span>
+                      </label>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <div class="form-select text-muted">Нет регионов</div>
+            {% endif %}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ filter_form.is_confirmed.label }}</label>
+            {{ filter_form.is_confirmed }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ filter_form.has_photo.label }}</label>
+            {{ filter_form.has_photo }}
+          </div>
+          <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-primary">Фильтр</button>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">Сброс</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle bg-white shadow-sm">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">Подтв.</th>
+          <th scope="col">Фото</th>
+          <th scope="col">Рыба</th>
+          <th scope="col">Водоём</th>
+          <th scope="col">Дата</th>
+          <th scope="col">Автор</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+          <tr>
+            <td style="width: 48px;">
+              <form method="post" action="{% url 'catches:report_toggle_confirm' report.external_id %}" class="confirm-form">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}" />
+                <input type="hidden" name="confirmed" value="0" />
+                <input
+                  type="checkbox"
+                  name="confirmed"
+                  value="1"
+                  class="form-check-input confirm-checkbox"
+                  {% if report.review_status == "confirmed" %}checked{% endif %}
+                  title="Подтверждён"
+                />
+              </form>
+            </td>
+            <td style="width: 72px;">
+              {% with photo=report.photos.first %}
+                {% if photo and photo.local_file %}
+                  <img src="{{ photo.local_file.url }}" alt="" class="rounded" style="width: 56px; height: 56px; object-fit: cover;" />
+                {% else %}
+                  <div class="bg-light rounded d-flex align-items-center justify-content-center text-muted" style="width: 56px; height: 56px;">—</div>
+                {% endif %}
+              {% endwith %}
+            </td>
+            <td>
+              <a href="{% url 'catches:report_edit' report.external_id %}" class="text-decoration-none fw-bold">
+                {{ report.fish_type|default:"—" }}
+              </a>
+              {% if report.caught %}<div class="small text-muted">{{ report.caught }} шт.</div>{% endif %}
+            </td>
+            <td>
+              {{ report.reservoir_name|default:"—" }}
+              {% if report.region %}<div class="small text-muted">{{ report.region }}</div>{% endif %}
+            </td>
+            <td>{{ report.fishing_date|date:"d.m.Y"|default:"—" }}</td>
+            <td>{{ report.user.name|default:"—" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">
+              Отчётов пока нет. <a href="{% url 'catches:sync' %}">Загрузите данные из API</a>.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+    <nav aria-label="Pagination" class="mt-3">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filter_query %}&{{ filter_query }}{% endif %}">Назад</a>
+          </li>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filter_query %}&{{ filter_query }}{% endif %}">Вперёд</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endblock content %}
+
+{% block inline_javascript %}
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll(".fp-search-select-multi").forEach((select) => {
+        const toggle = select.querySelector(".fp-search-select-toggle");
+        const label = select.querySelector(".fp-search-select-label");
+        const menu = select.querySelector(".fp-search-select-menu");
+        const search = select.querySelector(".fp-search-select-search");
+        const items = select.querySelectorAll(".fp-search-select-checkbox-item");
+        const checkboxes = select.querySelectorAll(".fp-filter-checkbox");
+        const selectAllButton = select.querySelector(".fp-select-all");
+        const plural = select.dataset.plural || "выбрано";
+
+        const updateLabel = () => {
+          const checked = Array.from(checkboxes).filter((checkbox) => checkbox.checked);
+          if (checked.length === 0) {
+            label.textContent = "Все";
+          } else if (checked.length === 1) {
+            label.textContent = checked[0]
+              .closest(".fp-search-select-checkbox-item")
+              .querySelector("span")
+              .textContent.trim();
+          } else {
+            label.textContent = `${checked.length} ${plural}`;
+          }
+        };
+
+        updateLabel();
+
+        toggle.addEventListener("click", () => {
+          menu.classList.toggle("show");
+          if (menu.classList.contains("show")) {
+            search.focus();
+          }
+        });
+
+        search.addEventListener("input", () => {
+          const query = search.value.trim().toLowerCase();
+          items.forEach((item) => {
+            const matches = item.textContent.trim().toLowerCase().includes(query);
+            item.classList.toggle("d-none", !matches);
+          });
+        });
+
+        search.addEventListener("click", (event) => {
+          event.stopPropagation();
+        });
+
+        menu.addEventListener("click", (event) => {
+          event.stopPropagation();
+        });
+
+        checkboxes.forEach((checkbox) => {
+          checkbox.addEventListener("change", updateLabel);
+        });
+
+        if (selectAllButton) {
+          selectAllButton.addEventListener("click", () => {
+            const visibleCheckboxes = Array.from(checkboxes).filter(
+              (checkbox) => !checkbox.closest(".fp-search-select-checkbox-item").classList.contains("d-none"),
+            );
+            const allChecked = visibleCheckboxes.every((checkbox) => checkbox.checked);
+            visibleCheckboxes.forEach((checkbox) => {
+              checkbox.checked = !allChecked;
+            });
+            updateLabel();
+          });
+        }
+
+        document.addEventListener("click", (event) => {
+          if (!select.contains(event.target)) {
+            menu.classList.remove("show");
+            search.value = "";
+            items.forEach((item) => item.classList.remove("d-none"));
+          }
+        });
+      });
+
+      document.querySelectorAll(".confirm-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("change", async () => {
+          const form = checkbox.closest("form");
+          const formData = new FormData(form);
+          formData.set("confirmed", checkbox.checked ? "1" : "0");
+
+          try {
+            const response = await fetch(form.action, {
+              method: "POST",
+              body: formData,
+              credentials: "same-origin",
+            });
+            if (!response.ok) {
+              checkbox.checked = !checkbox.checked;
+            }
+          } catch (error) {
+            checkbox.checked = !checkbox.checked;
+          }
+        });
+      });
+    });
+  </script>
+{% endblock inline_javascript %}

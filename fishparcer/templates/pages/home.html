@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}fishparcer{% endblock title %}
+
+{% block content %}
+  <div class="text-center py-5">
+    <h1 class="display-5 mb-3">fishparcer</h1>
+    <p class="lead text-muted mb-4">Парсер рыболовных отчётов</p>
+
+    {% if request.user.is_authenticated %}
+      <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a href="{% url 'catches:sync' %}" class="btn btn-primary btn-lg">Загрузить из API</a>
+        <a href="{% url 'catches:report_list' %}" class="btn btn-outline-primary btn-lg">Просмотр отчётов</a>
+      </div>
+    {% else %}
+      <p class="text-muted">Войдите, чтобы загружать и редактировать отчёты.</p>
+      <a href="{% url 'account_login' %}" class="btn btn-primary">Войти</a>
+    {% endif %}
+  </div>
+{% endblock content %}

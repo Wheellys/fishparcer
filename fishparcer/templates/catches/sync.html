@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Загрузка данных — fishparcer{% endblock title %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <h1 class="mb-3">Загрузка данных</h1>
+      <p class="text-muted mb-4">
+        Вставьте ссылку на API из Postman. Если API требует авторизацию — добавьте Cookie.
+      </p>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label for="{{ form.url.id_for_label }}" class="form-label">{{ form.url.label }}</label>
+              {{ form.url }}
+              {% if form.url.errors %}
+                <div class="text-danger small mt-1">{{ form.url.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.session_cookie.id_for_label }}" class="form-label">{{ form.session_cookie.label }}</label>
+              {{ form.session_cookie }}
+              {% if form.session_cookie.help_text %}
+                <div class="form-text">{{ form.session_cookie.help_text }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.auth_token.id_for_label }}" class="form-label">{{ form.auth_token.label }}</label>
+              {{ form.auth_token }}
+            </div>
+
+            <hr class="my-4" />
+            <p class="text-muted small mb-3">Альтернатива — вставить JSON напрямую из Postman:</p>
+
+            <div class="mb-3">
+              <label for="{{ form.json_body.id_for_label }}" class="form-label">{{ form.json_body.label }}</label>
+              {{ form.json_body }}
+              {% if form.json_body.help_text %}
+                <div class="form-text">{{ form.json_body.help_text }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="{{ form.extra_headers.id_for_label }}" class="form-label">{{ form.extra_headers.label }}</label>
+              {{ form.extra_headers }}
+            </div>
+
+            <div class="form-check mb-4">
+              {{ form.download_photos }}
+              <label class="form-check-label" for="{{ form.download_photos.id_for_label }}">
+                {{ form.download_photos.label }}
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Загрузить в базу</button>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary ms-2">К отчётам</a>
+          </form>
+        </div>
+      </div>
+
+      <div class="alert alert-info mt-4 mb-0">
+        <strong>Как получить Cookie:</strong>
+        <ol class="mb-0 mt-2">
+          <li>Откройте Postman → ваш API-запрос</li>
+          <li>Вкладка <strong>Headers</strong> → скопируйте значение <strong>Cookie</strong></li>
+          <li>Вставьте в поле «Cookie сессии» выше</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
